@@ -313,9 +313,33 @@ Likewise, if you have a nested list, make sure that nested items are indented by
 
 Local images referenced in a Markdown file are automatically published to Confluence as attachments to the page.
 
+#### Responsive Images
+
+By default, all images are inserted as responsive, meaning they:
+- Are centered on the page
+- Automatically adapt to the width of the surrounding content area
+- Have no fixed width unless explicitly specified
+
+To specify a fixed width for an image, use HTML image syntax with the width attribute:
+
+```markdown
+<!-- Responsive image (default) -->
+![Image description](path/to/image.png)
+
+<!-- Fixed-width image (400 pixels) -->
+<img src="path/to/image.png" width="400" alt="Image description" />
+
+<!-- Fixed-width image with height -->
+<img src="path/to/image.png" width="500" height="300" alt="Image description" />
+```
+
+When you specify an explicit width, the image will maintain that fixed width rather than scaling responsively.
+
+#### SVG Handling
+
 Unfortunately, Confluence struggles with SVG images, e.g. they may only show in *edit* mode, display in a wrong size or text labels in the image may be truncated. (This seems to be a known issue in Confluence.) In order to mitigate the issue, whenever *md2conf* encounters a reference to an SVG image in a Markdown file, it checks whether a corresponding PNG image also exists in the same directory, and if a PNG image is found, it is published instead.
 
-External images referenced with an absolute URL retain the original URL.
+External images referenced with an absolute URL retain the original URL but still follow the responsive behavior unless width is explicitly specified.
 
 ### LaTeX math formulas
 
