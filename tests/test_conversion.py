@@ -169,6 +169,29 @@ class TestConversion(TypedTestCase):
 
         self.assertEqual(actual, expected)
 
+    def test_responsive_images(self) -> None:
+        """
+        Test that images are responsive by default, with optional explicit width/height.
+        This test verifies:
+        1. Default responsive image (no width/height attributes)
+        2. Image with explicit width (includes width and custom-width attributes)
+        3. Image with explicit height (includes height attribute)
+        4. Image with both width and height (includes both attributes)
+        """
+        _, doc = ConfluenceDocument.create(
+            self.source_dir / "responsive-images.md",
+            ConfluenceDocumentOptions(),
+            self.source_dir,
+            self.site_metadata,
+            self.page_metadata,
+        )
+        actual = standardize(doc.xhtml())
+
+        with open(self.target_dir / "responsive-images.xml", "r", encoding="utf-8") as f:
+            expected = substitute(self.target_dir, f.read())
+
+        self.assertEqual(actual, expected)
+
     def test_missing_title(self) -> None:
         _, doc = ConfluenceDocument.create(
             self.source_dir / "title.md",

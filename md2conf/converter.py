@@ -273,18 +273,22 @@ class ImageAttributes:
 
     def as_dict(self) -> dict[str, str]:
         attributes: dict[str, str] = {}
+        # Always center align all images (both block and inline)
+        attributes[AC_ATTR("align")] = "center"
+        attributes[AC_ATTR("layout")] = "center"
+
         if self.context is FormattingContext.BLOCK:
-            attributes[AC_ATTR("align")] = "center"
-            attributes[AC_ATTR("layout")] = "center"
+            # Only include width-related attributes if explicitly specified
             if self.width is not None:
                 attributes[AC_ATTR("original-width")] = str(self.width)
-            if self.height is not None:
-                attributes[AC_ATTR("original-height")] = str(self.height)
-            if self.width is not None:
                 attributes[AC_ATTR("custom-width")] = "true"
                 attributes[AC_ATTR("width")] = str(self.width)
+            # Always include height if provided
+            if self.height is not None:
+                attributes[AC_ATTR("original-height")] = str(self.height)
 
         elif self.context is FormattingContext.INLINE:
+            # Only include width/height if explicitly specified
             if self.width is not None:
                 attributes[AC_ATTR("width")] = str(self.width)
             if self.height is not None:
