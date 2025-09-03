@@ -4,28 +4,28 @@
   </ac:rich-text-body>
 </ac:structured-macro>
 <h2>Block images</h2>
-<ac:image ac:align="center" ac:layout="center" ac:alt="PNG image with caption">
+<ac:image ac:align="center" ac:layout="center" ac:custom-width="true" ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="PNG image with caption">
   <ri:attachment ri:filename="figure_raster.png"/>
   <ac:caption>PNG image with caption</ac:caption>
 </ac:image>
-<ac:image ac:align="center" ac:layout="center" ac:alt="SVG image with caption" ac:title="A vector image">
+<ac:image ac:align="center" ac:layout="center" ac:custom-width="true" ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="SVG image with caption" ac:title="A vector image">
   <ri:attachment ri:filename="figure_vector.svg"/>
   <ac:caption>A vector image</ac:caption>
 </ac:image>
-<ac:image ac:align="center" ac:layout="center" ac:alt="draw.io image embedded in PNG">
+<ac:image ac:align="center" ac:layout="center" ac:custom-width="true" ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="draw.io image embedded in PNG">
   <ri:attachment ri:filename="figure_diagram.drawio.png"/>
   <ac:caption>draw.io image embedded in PNG</ac:caption>
 </ac:image>
-<ac:image ac:align="center" ac:layout="center" ac:alt="draw.io image embedded in SVG">
+<ac:image ac:align="center" ac:layout="center" ac:custom-width="true" ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="draw.io image embedded in SVG">
   <ri:attachment ri:filename="figure_diagram.drawio.svg"/>
   <ac:caption>draw.io image embedded in SVG</ac:caption>
 </ac:image>
-<ac:image ac:align="center" ac:layout="center" ac:alt="External image" ac:title="An image at an external location">
+<ac:image ac:align="center" ac:layout="center" ac:custom-width="true" ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="External image" ac:title="An image at an external location">
   <ri:url ri:value="http://confluence.atlassian.com/images/logo/confluence_48_trans.png"/>
   <ac:caption>An image at an external location</ac:caption>
 </ac:image>
-<ac:image ac:align="center" ac:layout="center" ac:original-width="24" ac:original-height="24" ac:custom-width="true" ac:width="24">
+<ac:image ac:align="center" ac:layout="center" ac:original-width="24" ac:original-height="24" ac:custom-width="true" ac:width="24" width="24" data-width="24" data-height="24" style="max-width: 100%; height: auto;">
   <ri:url ri:value="http://confluence.atlassian.com/images/logo/confluence_48_trans.png"/>
 </ac:image>
 <h2>Inline images</h2>
-<p>This is an <ac:image ac:alt="inline image"><ri:url ri:value="http://confluence.atlassian.com/images/logo/confluence_48_trans.png"/></ac:image> at an external location.</p>
+<p>This is an <ac:image ac:width="700" width="700" data-width="700" style="max-width: 100%; height: auto;" ac:alt="inline image"><ri:url ri:value="http://confluence.atlassian.com/images/logo/confluence_48_trans.png"/></ac:image> at an external location.</p>

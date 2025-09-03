@@ -534,6 +534,8 @@ options:
   --local               Write XHTML-based Confluence Storage Format files locally without invoking Confluence API.
   --headers KEY=VALUE [KEY=VALUE ...]
                         Apply custom headers to all Confluence API requests.
+  --image-width IMAGE_WIDTH
+                        Default width in pixels for responsive images (default: 700).
   --webui-links         Enable Confluence Web UI links. (Typically required for on-prem versions of Confluence.)
 ```
 
