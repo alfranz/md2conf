@@ -1,11 +1,3 @@
-"""
-Test responsive image functionality.
-
-Copyright 2022-2025, Levente Hunyadi
-
-:see: https://github.com/hunyadi/md2conf
-"""
-
 import unittest
 from pathlib import Path
 
