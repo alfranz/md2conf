@@ -43,6 +43,7 @@ class Arguments(argparse.Namespace):
     render_mermaid: bool
     render_latex: bool
     diagram_output_format: Literal["png", "svg"]
+    image_width: int
     local: bool
     headers: dict[str, str]
     webui_links: bool
@@ -237,6 +238,12 @@ def get_parser() -> argparse.ArgumentParser:
         help="Apply custom headers to all Confluence API requests.",
     )
     parser.add_argument(
+        "--image-width",
+        type=int,
+        default=700,
+        help="Default width in pixels for responsive images (default: 700).",
+    )
+    parser.add_argument(
         "--webui-links",
         action="store_true",
         default=False,
@@ -274,6 +281,7 @@ def main() -> None:
         render_mermaid=args.render_mermaid,
         render_latex=args.render_latex,
         diagram_output_format=args.diagram_output_format,
+        image_width=args.image_width,
         webui_links=args.webui_links,
     )
     if args.local:

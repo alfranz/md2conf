@@ -266,6 +266,8 @@ class ImageAttributes:
     alt: Optional[str]
     title: Optional[str]
     caption: Optional[str]
+    responsive_width: Optional[int] = None
+    responsive_height: Optional[int] = None
 
     def __post_init__(self) -> None:
         if self.caption is None and self.context is FormattingContext.BLOCK:
@@ -280,15 +282,37 @@ class ImageAttributes:
                 attributes[AC_ATTR("original-width")] = str(self.width)
             if self.height is not None:
                 attributes[AC_ATTR("original-height")] = str(self.height)
-            if self.width is not None:
+            
+            # Use responsive width/height if available, otherwise fall back to natural dimensions
+            display_width = self.responsive_width or self.width
+            display_height = self.responsive_height or self.height
+            
+            if display_width is not None:
                 attributes[AC_ATTR("custom-width")] = "true"
-                attributes[AC_ATTR("width")] = str(self.width)
+                attributes[AC_ATTR("width")] = str(display_width)
+                # Add HTML attributes for responsive behavior
+                attributes["width"] = str(display_width)
+                attributes["data-width"] = str(display_width)
+                attributes["style"] = "max-width: 100%; height: auto;"
+            
+            if display_height is not None:
+                attributes["data-height"] = str(display_height)
 
         elif self.context is FormattingContext.INLINE:
-            if self.width is not None:
-                attributes[AC_ATTR("width")] = str(self.width)
-            if self.height is not None:
-                attributes[AC_ATTR("height")] = str(self.height)
+            # Use responsive width/height if available, otherwise fall back to natural dimensions
+            display_width = self.responsive_width or self.width
+            display_height = self.responsive_height or self.height
+            
+            if display_width is not None:
+                attributes[AC_ATTR("width")] = str(display_width)
+                # Add HTML attributes for responsive behavior
+                attributes["width"] = str(display_width)
+                attributes["data-width"] = str(display_width)
+                attributes["style"] = "max-width: 100%; height: auto;"
+            
+            if display_height is not None:
+                attributes[AC_ATTR("height")] = str(display_height)
+                attributes["data-height"] = str(display_height)
         else:
             raise NotImplementedError("match not exhaustive for enumeration")
 
@@ -311,8 +335,8 @@ class ImageAttributes:
             raise NotImplementedError("match not exhaustive for enumeration")
 
 
-ImageAttributes.EMPTY_BLOCK = ImageAttributes(FormattingContext.BLOCK, None, None, None, None, None)
-ImageAttributes.EMPTY_INLINE = ImageAttributes(FormattingContext.INLINE, None, None, None, None, None)
+ImageAttributes.EMPTY_BLOCK = ImageAttributes(FormattingContext.BLOCK, None, None, None, None, None, None, None)
+ImageAttributes.EMPTY_INLINE = ImageAttributes(FormattingContext.INLINE, None, None, None, None, None, None, None)
 
 
 @dataclass
@@ -329,6 +353,7 @@ class ConfluenceConverterOptions:
     :param render_mermaid: Whether to pre-render Mermaid diagrams into PNG/SVG images.
     :param render_latex: Whether to pre-render LaTeX formulas into PNG/SVG images.
     :param diagram_output_format: Target image format for diagrams.
+    :param image_width: Default width in pixels for responsive images.
     :param webui_links: When true, convert relative URLs to Confluence Web UI links.
     """
 
@@ -339,6 +364,7 @@ class ConfluenceConverterOptions:
     render_mermaid: bool = False
     render_latex: bool = False
     diagram_output_format: Literal["png", "svg"] = "png"
+    image_width: int = 700
     webui_links: bool = False
 
 
@@ -601,7 +627,29 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
         height = image.get("height")
         pixel_width = int(width) if width is not None and width.isdecimal() else None
         pixel_height = int(height) if height is not None and height.isdecimal() else None
-        attrs = ImageAttributes(context, pixel_width, pixel_height, alt, title, None)
+        
+        # Calculate responsive dimensions
+        responsive_width = None
+        responsive_height = None
+        
+        if pixel_width is not None and pixel_height is not None:
+            # If explicit dimensions provided, use them for responsive sizing
+            if pixel_width > self.options.image_width:
+                # Scale down large images to responsive width
+                responsive_width = self.options.image_width
+                responsive_height = round(pixel_height * responsive_width / pixel_width)
+            else:
+                # Use explicit dimensions if they're smaller than max responsive width
+                responsive_width = pixel_width
+                responsive_height = pixel_height
+        elif pixel_width is not None:
+            # Only width provided - use responsive width if larger
+            responsive_width = min(pixel_width, self.options.image_width)
+        else:
+            # No dimensions provided - apply default responsive width
+            responsive_width = self.options.image_width
+        
+        attrs = ImageAttributes(context, pixel_width, pixel_height, alt, title, None, responsive_width, responsive_height)
 
         if is_absolute_url(src):
             return self._transform_external_image(src, attrs)
