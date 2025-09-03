@@ -282,11 +282,11 @@ class ImageAttributes:
                 attributes[AC_ATTR("original-width")] = str(self.width)
             if self.height is not None:
                 attributes[AC_ATTR("original-height")] = str(self.height)
-            
+
             # Use responsive width/height if available, otherwise fall back to natural dimensions
             display_width = self.responsive_width or self.width
             display_height = self.responsive_height or self.height
-            
+
             if display_width is not None:
                 attributes[AC_ATTR("custom-width")] = "true"
                 attributes[AC_ATTR("width")] = str(display_width)
@@ -294,7 +294,7 @@ class ImageAttributes:
                 attributes["width"] = str(display_width)
                 attributes["data-width"] = str(display_width)
                 attributes["style"] = "max-width: 100%; height: auto;"
-            
+
             if display_height is not None:
                 attributes["data-height"] = str(display_height)
 
@@ -302,14 +302,14 @@ class ImageAttributes:
             # Use responsive width/height if available, otherwise fall back to natural dimensions
             display_width = self.responsive_width or self.width
             display_height = self.responsive_height or self.height
-            
+
             if display_width is not None:
                 attributes[AC_ATTR("width")] = str(display_width)
                 # Add HTML attributes for responsive behavior
                 attributes["width"] = str(display_width)
                 attributes["data-width"] = str(display_width)
                 attributes["style"] = "max-width: 100%; height: auto;"
-            
+
             if display_height is not None:
                 attributes[AC_ATTR("height")] = str(display_height)
                 attributes["data-height"] = str(display_height)
@@ -627,11 +627,11 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
         height = image.get("height")
         pixel_width = int(width) if width is not None and width.isdecimal() else None
         pixel_height = int(height) if height is not None and height.isdecimal() else None
-        
+
         # Calculate responsive dimensions
         responsive_width = None
         responsive_height = None
-        
+
         if pixel_width is not None and pixel_height is not None:
             # If explicit dimensions provided, use them for responsive sizing
             if pixel_width > self.options.image_width:
@@ -648,7 +648,7 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
         else:
             # No dimensions provided - apply default responsive width
             responsive_width = self.options.image_width
-        
+
         attrs = ImageAttributes(context, pixel_width, pixel_height, alt, title, None, responsive_width, responsive_height)
 
         if is_absolute_url(src):
@@ -886,6 +886,85 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
             LOGGER.warning("Failed to extract Mermaid properties: %s", ex)
             return None
 
+    def _create_responsive_mermaid_attributes(self, image_data: bytes) -> ImageAttributes:
+        """Create responsive image attributes for Mermaid diagrams."""
+        pixel_width = None
+        pixel_height = None
+
+        # Get actual dimensions for PNG images
+        if self.options.diagram_output_format == "png":
+            try:
+                from . import latex
+
+                pixel_width, pixel_height = latex.get_png_dimensions(data=image_data)
+            except Exception as ex:
+                LOGGER.warning("Failed to get PNG dimensions for Mermaid diagram: %s", ex)
+
+        # Calculate responsive dimensions
+        responsive_width = None
+        responsive_height = None
+
+        if pixel_width is not None and pixel_height is not None:
+            # If we have dimensions, apply responsive sizing logic
+            if pixel_width > self.options.image_width:
+                # Scale down large images to responsive width
+                responsive_width = self.options.image_width
+                responsive_height = round(pixel_height * responsive_width / pixel_width)
+            else:
+                # Use actual dimensions if they're smaller than max responsive width
+                responsive_width = pixel_width
+                responsive_height = pixel_height
+        else:
+            # No dimensions available - apply default responsive width
+            responsive_width = self.options.image_width
+
+        return ImageAttributes(
+            FormattingContext.BLOCK,
+            pixel_width,
+            pixel_height,
+            None,  # alt
+            None,  # title
+            None,  # caption
+            responsive_width,
+            responsive_height,
+        )
+
+    def _update_mermaid_attributes_with_dimensions(self, attrs: ImageAttributes, image_data: bytes) -> ImageAttributes:
+        """Update existing image attributes with actual rendered dimensions for Mermaid diagrams."""
+        pixel_width = attrs.width
+        pixel_height = attrs.height
+
+        # Get actual dimensions for PNG images if not already available
+        if self.options.diagram_output_format == "png" and (pixel_width is None or pixel_height is None):
+            try:
+                from . import latex
+
+                pixel_width, pixel_height = latex.get_png_dimensions(data=image_data)
+            except Exception as ex:
+                LOGGER.warning("Failed to get PNG dimensions for Mermaid diagram: %s", ex)
+
+        # Calculate responsive dimensions if not already set or if we have better info now
+        responsive_width = attrs.responsive_width
+        responsive_height = attrs.responsive_height
+
+        if pixel_width is not None and pixel_height is not None:
+            # If we have actual dimensions and no responsive sizing yet, apply logic
+            if responsive_width is None:
+                if pixel_width > self.options.image_width:
+                    # Scale down large images to responsive width
+                    responsive_width = self.options.image_width
+                    responsive_height = round(pixel_height * responsive_width / pixel_width)
+                else:
+                    # Use actual dimensions if they're smaller than max responsive width
+                    responsive_width = pixel_width
+                    responsive_height = pixel_height
+
+        # If still no responsive width, use default
+        if responsive_width is None:
+            responsive_width = self.options.image_width
+
+        return ImageAttributes(attrs.context, pixel_width, pixel_height, attrs.alt, attrs.title, attrs.caption, responsive_width, responsive_height)
+
     def _transform_external_mermaid(self, absolute_path: Path, attrs: ImageAttributes) -> ET._Element:
         "Emits Confluence Storage Format XHTML for a Mermaid diagram read from an external file."
 
@@ -900,7 +979,10 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
             image_data = mermaid.render_diagram(content, self.options.diagram_output_format, config=config)
             image_filename = attachment_name(relative_path.with_suffix(f".{self.options.diagram_output_format}"))
             self.embedded_files[image_filename] = EmbeddedFileData(image_data, attrs.alt)
-            return self._create_attached_image(image_filename, attrs)
+
+            # Update attributes with actual rendered dimensions for better responsive behavior
+            responsive_attrs = self._update_mermaid_attributes_with_dimensions(attrs, image_data)
+            return self._create_attached_image(image_filename, responsive_attrs)
         else:
             self.images.append(ImageData(absolute_path, attrs.alt))
             mermaid_filename = attachment_name(relative_path)
@@ -915,7 +997,10 @@ class ConfluenceStorageFormatConverter(NodeVisitor):
             image_hash = hashlib.md5(image_data).hexdigest()
             image_filename = attachment_name(f"embedded_{image_hash}.{self.options.diagram_output_format}")
             self.embedded_files[image_filename] = EmbeddedFileData(image_data)
-            return self._create_attached_image(image_filename, ImageAttributes.EMPTY_BLOCK)
+
+            # Create responsive image attributes for Mermaid diagrams
+            attrs = self._create_responsive_mermaid_attributes(image_data)
+            return self._create_attached_image(image_filename, attrs)
         else:
             mermaid_data = content.encode("utf-8")
             mermaid_hash = hashlib.md5(mermaid_data).hexdigest()
